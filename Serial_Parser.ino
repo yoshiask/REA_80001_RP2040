@@ -29,6 +29,21 @@ void serialParser() {
       Serial.println("5V LED Power Enabling");
       validCommand = true;
     }
+    if (strcmp(inputString, "off") == 0) {
+      setDesiredFullBridgeState(FULL_BRIDGE_OFF);
+      Serial.println("Full Bridge Off");
+      validCommand = true;
+    }
+    if (strcmp(inputString, "po") == 0) {
+      setDesiredFullBridgeState(FULL_BRIDGE_POSITIVE);
+      Serial.println("Full Bridge Positive");
+      validCommand = true;
+    }
+    if (strcmp(inputString, "rv") == 0) {
+      setDesiredFullBridgeState(FULL_BRIDGE_NEGATIVE);
+      Serial.println("Full Bridge Negative");
+      validCommand = true;
+    }
     if (strcmp(inputString, "t") == 0) {
       sendTestPatternCommand();
       Serial.println("Starting/Stopping Test Pattern");
@@ -99,6 +114,9 @@ void printCommands() {
   Serial.println("20V : Turn on 20V LED Power (currently not functional)");
   Serial.println("12V : Turn on 12V LED Power");
   Serial.println("5V : Turn on 5V LED Power");
+  Serial.println("off : Full Bridge Off");
+  Serial.println("po : Full Bridge Positive");
+  Serial.println("rv : Full Bridge Reverse");
   Serial.println("t : Run/Stop Test Pattern on LED Strip (power must be enabled first)");
   Serial.println("scan : Run I2C Scanner");
   Serial.println("psu : Read and print all PSU Registers");

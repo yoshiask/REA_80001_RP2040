@@ -1,5 +1,7 @@
 Adafruit_HUSB238 husb238;
 
+HUSB238_PDSelection pdSelection = PD_NOT_SELECTED;
+
 void initalize_USB_PD() {
   if (husb238.begin(HUSB238_I2CADDR_DEFAULT, &Wire)) {
     Serial.println("USB-C PD IC Identified");
@@ -14,8 +16,8 @@ void USB_PD_Print() {
   Serial.print("Attachment Status: ");
   Serial.println(attached ? "Attached" : "Unattached");
 
-  if (! attached) return;
-  
+  if (!attached) return;
+
   // Test getCCStatus function
   bool ccStatus = husb238.getCCdirection();
   Serial.print("CC Direction: ");
@@ -52,7 +54,7 @@ void USB_PD_Print() {
   // bool contractV = husb238.get5VContractV();
   // Serial.print("5V Contract Voltage: ");
   // Serial.print(contractV ? "5V" : "Other");
-  
+
   // How much current can we get?
   // HUSB238_5VCurrentContract contractA = husb238.get5VContractA();
   // Serial.print(" & Current: ");
@@ -147,6 +149,13 @@ void USB_PD_Print() {
     }
     Serial.println();
   }
+}
+
+HUSB238_PDSelection getPDStatus(void) {
+  return pdSelection;
+}
+
+void requestPDProfile() {
 
   // Override whatever the jumpers on the board say, and get a specific voltage!
   // husb238.selectPD(PD_SRC_20V);  // Select 5V
@@ -189,8 +198,9 @@ void USB_PD_Print() {
       Serial.println("Unknown");
       break;
   }
+  pdSelection = selectedPD;
+  updatePDStatusLED(selectedPD);
 }
-
 
 void printCurrentSetting(HUSB238_CurrentSetting srcCurrent) {
   switch (srcCurrent) {

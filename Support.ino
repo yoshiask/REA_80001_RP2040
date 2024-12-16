@@ -22,18 +22,34 @@ void slottedLoop() {
 
 DeviceType deviceDetected = DEVICE_UNKNOWN;
 
+float printAnalogPin(pin_size_t analogPin) {
+  uint32_t analogAverage = 0;
+  for (int i = 0; i < 10000; i++) {
+    analogAverage += analogRead(analogPin);
+  }
+  return analogAverage / 10000.0;
+}
+
+
+
 void checkDeviceType() {
-  pinMode(DEVICE_TYPE_PIN, INPUT_PULLUP);
-  delay(1);
-  PinStatus deviceTypeRead = digitalRead(DEVICE_TYPE_PIN);
-  if (deviceTypeRead == LOW) {
-    deviceDetected = DEVICE_STANDALONE_PSU;
-    Serial.println("Device Detected: Standalone PSU");
-  }
-  if (deviceTypeRead == HIGH) {
-    deviceDetected = DEVICE_ATTACHED_PSU;
-    Serial.println("Device Detected: Attached PSU");
-  }
+  analogReadResolution(12);
+  Serial.print("CC1_UFP Voltage: ");
+  Serial.println((3.3) * printAnalogPin(CC1_UFP) / (float)4095);
+  Serial.print("CC1_DFP Voltage: ");
+  Serial.println((3.3) * printAnalogPin(CC1_DFP) / (float)4095);
+  Serial.print("CC1_DFP Voltage: ");
+  Serial.println((3.3) * printAnalogPin(CC2_DFP) / (float)4095);
+
+  // PinStatus deviceTypeRead = digitalRead(DEVICE_TYPE_PIN);
+  // if (deviceTypeRead == LOW) {
+  //   deviceDetected = DEVICE_STANDALONE_PSU;
+  //   Serial.println("Device Detected: Standalone PSU");
+  // }
+  // if (deviceTypeRead == HIGH) {
+  //   deviceDetected = DEVICE_ATTACHED_PSU;
+  //   Serial.println("Device Detected: Attached PSU");
+  // }
 }
 
 DeviceType getDeviceType() {
@@ -41,6 +57,7 @@ DeviceType getDeviceType() {
 }
 
 void printDeviceType() {
+  checkDeviceType();
   if (deviceDetected == DEVICE_STANDALONE_PSU) {
     Serial.println("Device Detected: Standalone PSU");
   }
@@ -52,28 +69,45 @@ void printDeviceType() {
 void initializeStatusLED() {
   status_led.begin();
   status_led.clear();
-  status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(10, 10, 10));
+  status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(20, 20, 20));
+  status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
   while (!status_led.canShow()) {}
   status_led.show();
 }
 
 void updateStatusLED(PSUState commandedSupplyState) {
-  status_led.clear();
   if (commandedSupplyState == PSU_POWER_OFF) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(10, 10, 10));
+    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(20, 20, 20));
   }
   if (commandedSupplyState == PSU_20V) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 0, 10));
+    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 0, 20));
   }
   if (commandedSupplyState == PSU_12V) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 10, 10));
+    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 20, 20));
   }
   if (commandedSupplyState == PSU_5V) {
-    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 10, 0));
+    status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 20, 0));
+  }
+
+  while (!status_led.canShow()) {}
+  status_led.show();
+}
+
+void updatePDStatusLED(HUSB238_PDSelection pdStatus) {
+  if (pdStatus == PD_SRC_20V) {
+    status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(0, 20, 0));
+  } else {
+    status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
   }
   while (!status_led.canShow()) {}
   status_led.show();
 }
+
+void ledHandler(void) {
+  updateStatusLED(getPSUStatus());
+  updatePDStatusLED(getPDStatus());
+}
+
 
 void updatePowerState(PSUState commandedSupplyState) {
   Serial.print("Power Supply State: ");

@@ -1,5 +1,145 @@
 #define PSU_I2C_ADDRESS 0x56
 
+FullBridgeType fullBridgeState = FULL_BRIDGE_OFF;
+FullBridgeType previousState = FULL_BRIDGE_OFF;
+FullBridgeType desiredState = FULL_BRIDGE_OFF;
+
+static FullBridgePolarity fullBridgePolarity = FULL_BRIDGE_POLARITY_POSITIVE;
+
+// Initialization for the pins
+void initializeFullBridge() {
+  fullBridgeOff();
+  pinMode(FB_B_H, OUTPUT);
+  pinMode(FB_B_L, OUTPUT);
+  pinMode(FB_A_H, OUTPUT);
+  pinMode(FB_A_L, OUTPUT);
+}
+
+// Turn off all connections
+void fullBridgeOff() {
+  digitalWrite(FB_B_H, LOW);
+  digitalWrite(FB_B_L, HIGH);
+  digitalWrite(FB_A_H, LOW);
+  digitalWrite(FB_A_L, HIGH);
+}
+
+// Enable positive connection
+void fullBridgePositive() {
+  digitalWrite(FB_B_H, LOW);
+  digitalWrite(FB_B_L, HIGH);
+  digitalWrite(FB_A_H, HIGH);
+  digitalWrite(FB_A_L, LOW);
+}
+
+// Enable negative connection
+void fullBridgeNegative() {
+  digitalWrite(FB_B_H, HIGH);
+  digitalWrite(FB_B_L, LOW);
+  digitalWrite(FB_A_H, LOW);
+  digitalWrite(FB_A_L, HIGH);
+}
+
+int offCycles = 0;  // Tracks OFF cycles when transitioning from positive to negative or vice versa
+
+// State machine for the full bridge
+void fullBridgeStateMachine() {
+  // Handle transitions and on-enter conditions
+  switch (fullBridgeState) {
+    case FULL_BRIDGE_OFF:
+      if (fullBridgeState != previousState) {
+        Serial.println("FULL_BRIDGE_OFF");
+        fullBridgeOff();
+        offCycles = 0;
+        previousState = fullBridgeState;
+      }
+
+      if (desiredState == FULL_BRIDGE_POSITIVE || desiredState == FULL_BRIDGE_NEGATIVE) {
+        offCycles++;
+        if (offCycles >= 2) {
+          fullBridgeState = desiredState;
+          offCycles = 0;
+        }
+      }
+      break;
+
+    case FULL_BRIDGE_POSITIVE:
+      if (fullBridgeState != previousState) {
+        Serial.println("FULL_BRIDGE_POSITIVE");
+        fullBridgePositive();
+        previousState = fullBridgeState;
+      }
+
+      if (desiredState == FULL_BRIDGE_NEGATIVE) {
+        fullBridgeState = FULL_BRIDGE_OFF;
+      } else if (desiredState == FULL_BRIDGE_OFF) {
+        fullBridgeState = FULL_BRIDGE_OFF;
+      }
+      break;
+
+    case FULL_BRIDGE_NEGATIVE:
+      if (fullBridgeState != previousState) {
+        Serial.println("FULL_BRIDGE_NEGATIVE");
+        fullBridgeNegative();
+        previousState = fullBridgeState;
+      }
+      if (desiredState == FULL_BRIDGE_POSITIVE) {
+        fullBridgeState = FULL_BRIDGE_OFF;
+      } else if (desiredState == FULL_BRIDGE_OFF) {
+        fullBridgeState = FULL_BRIDGE_OFF;
+      }
+      break;
+
+    default:
+      if (fullBridgeState != previousState) {
+        Serial.println("Entering unknown state, defaulting to FULL_BRIDGE_OFF");
+        fullBridgeOff();
+        previousState = fullBridgeState;
+      }
+      fullBridgeState = FULL_BRIDGE_OFF;
+      break;
+  }
+}
+
+// Example method to set the desired state
+void setDesiredFullBridgeState(FullBridgeType newDesiredState) {
+  desiredState = newDesiredState;
+}
+
+void turnOnFullBridge() {
+  if (fullBridgePolarity == FULL_BRIDGE_POLARITY_POSITIVE) {
+    setDesiredFullBridgeState(FULL_BRIDGE_POSITIVE);
+  }
+  // if (fullBridgePolarity == FULL_BRIDGE_POLARITY_NEGATIVE) {
+  //   setDesiredFullBridgeState(FULL_BRIDGE_NEGATIVE);
+  // }
+}
+
+void turnOffFullBridge() {
+  setDesiredFullBridgeState(FULL_BRIDGE_OFF);
+}
+
+void setFullBridgePolarity(FullBridgePolarity polarity) {
+  if (polarity == FULL_BRIDGE_POLARITY_POSITIVE) {
+    fullBridgePolarity = polarity;
+    Serial.println("CAN Received Full Bridge Positive");
+  }
+  if (polarity == FULL_BRIDGE_POLARITY_NEGATIVE) {
+    //fullBridgePolarity = polarity;
+    Serial.println("CAN Received Full Bridge Negative, Command Disabled.");
+  }
+}
+
+void initalizeFullBridge() {
+  pinMode(FB_B_H, OUTPUT);
+  pinMode(FB_B_L, OUTPUT);
+  pinMode(FB_A_H, OUTPUT);
+  pinMode(FB_A_L, OUTPUT);
+  digitalWrite(PSU_CONNECT_OUTPUT_PIN, LOW);
+  digitalWrite(CONNECT_INPUT_PIN, LOW);
+  digitalWrite(PSU_STANDBY_PIN, HIGH);
+  digitalWrite(PSU_EN_12V_PIN, LOW);
+}
+
 void initializePSUPins() {
   pinMode(PSU_CONNECT_OUTPUT_PIN, OUTPUT);
   pinMode(PSU_STANDBY_PIN, OUTPUT);
@@ -9,6 +149,10 @@ void initializePSUPins() {
   digitalWrite(CONNECT_INPUT_PIN, LOW);
   digitalWrite(PSU_STANDBY_PIN, HIGH);
   digitalWrite(PSU_EN_12V_PIN, LOW);
+}
+
+PSUState getPSUStatus(void) {
+  return psuState;
 }
 
 void powerStateMachineCommand(PSUState commandedState) {
@@ -21,6 +165,7 @@ void powerStateMachineCommand(PSUState commandedState) {
   if (psuState == PSU_POWER_OFF) {
     digitalWrite(PSU_STANDBY_PIN, HIGH);
     digitalWrite(PSU_EN_12V_PIN, LOW);
+    turnOffFullBridge();
     updateStatusLED(psuState);
     Serial.println("LED Power Off");
     sendPSUStatusCommand(psuState, PSU_OK);
@@ -37,7 +182,8 @@ void powerStateMachineCommand(PSUState commandedState) {
   if (psuState == PSU_12V) {
     digitalWrite(PSU_STANDBY_PIN, LOW);
     digitalWrite(PSU_EN_12V_PIN, HIGH);
-    delay(1);
+    turnOnFullBridge();
+    delay(2);
     digitalWrite(PSU_CONNECT_OUTPUT_PIN, HIGH);
     updateStatusLED(psuState);
     Serial.println("LED Power 12V Enabled");
@@ -46,7 +192,8 @@ void powerStateMachineCommand(PSUState commandedState) {
   if (psuState == PSU_5V) {
     digitalWrite(PSU_STANDBY_PIN, LOW);
     digitalWrite(PSU_EN_12V_PIN, LOW);
-    delay(1);
+    turnOnFullBridge();
+    delay(2);
     digitalWrite(PSU_CONNECT_OUTPUT_PIN, HIGH);
     updateStatusLED(psuState);
     Serial.println("LED Power 5V Enabled");

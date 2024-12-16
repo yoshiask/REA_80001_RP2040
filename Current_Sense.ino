@@ -1,6 +1,6 @@
-#define VOLTS_PER_AMP 0.185
+#define VOLTS_PER_AMP 0.5
 
-const int currentSensePin = A0;  // Analog input pin that the potentiometer is attached to
+const int currentSensePin = CURRENT_SENSE;  // Analog input pin that the potentiometer is attached to
 
 float currentSenseZero = 0;
 

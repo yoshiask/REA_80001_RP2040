@@ -38,6 +38,9 @@ void checkCANMessages() {
         }
       }
       if (getDeviceType() == DEVICE_ATTACHED_PSU) {
+        if (CANMessageType == CAN_OUTPUT_POLARITY) {
+          reportOutCurrent();
+        }        
         if (CANMessageType == CAN_CURRENT_REQUEST) {
           reportOutCurrent();
         }
