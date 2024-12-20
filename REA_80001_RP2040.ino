@@ -22,6 +22,8 @@
 #define CC1_UFP A1
 #define CC1_DFP A2
 #define CC2_DFP A3
+#define CAN_NTERM 8
+
 
 #define CAN_STUFFING_FRAME 0xAA
 #define CAN_IDENTIFIER 0x0A
@@ -98,6 +100,7 @@ void setup() {
   initializePSUPins();
   powerStateMachineCommand(PSU_POWER_OFF);
   initializeFullBridge();
+  terminateCAN();
 
   //To be reconsidered
   requestPDProfile();
@@ -114,6 +117,7 @@ void Slot_100ms() {
   refreshStatusLED();
   fullBridgeStateMachine();
   ledHandler();
+  checkInputVoltage();
 }
 
 //Functions that run once every 10ms

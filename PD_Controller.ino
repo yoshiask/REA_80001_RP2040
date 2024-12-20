@@ -199,7 +199,7 @@ void requestPDProfile() {
       break;
   }
   pdSelection = selectedPD;
-  updatePDStatusLED(selectedPD);
+  //updatePDStatusLED(selectedPD);
 }
 
 void printCurrentSetting(HUSB238_CurrentSetting srcCurrent) {

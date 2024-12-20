@@ -70,8 +70,8 @@ void initializeStatusLED() {
   status_led.begin();
   status_led.clear();
   status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(20, 20, 20));
-  status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
-  while (!status_led.canShow()) {}
+  //status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
+  //while (!status_led.canShow()) {}
   status_led.show();
 }
 
@@ -88,24 +88,26 @@ void updateStatusLED(PSUState commandedSupplyState) {
   if (commandedSupplyState == PSU_5V) {
     status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(0, 20, 0));
   }
-
-  while (!status_led.canShow()) {}
-  status_led.show();
 }
 
+static HUSB238_PDSelection pdLEDStatus;
+
 void updatePDStatusLED(HUSB238_PDSelection pdStatus) {
+  pdLEDStatus = pdStatus;
   if (pdStatus == PD_SRC_20V) {
     status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(0, 20, 0));
   } else {
     status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
   }
-  while (!status_led.canShow()) {}
-  status_led.show();
 }
 
+
+
 void ledHandler(void) {
+  status_led.clear();  
   updateStatusLED(getPSUStatus());
-  updatePDStatusLED(getPDStatus());
+  updatePDStatusLED(pdLEDStatus);
+  status_led.show();
 }
 
 

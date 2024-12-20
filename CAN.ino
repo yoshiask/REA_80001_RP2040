@@ -22,6 +22,11 @@ void my_cb(struct can2040* cd, uint32_t notify, struct can2040_msg* msg) {
   }
 }
 
+void terminateCAN() {
+  pinMode(CAN_NTERM, OUTPUT);
+  digitalWrite(CAN_NTERM, LOW);
+}
+
 void checkCANMessages() {
   if (got_msg) {
     got_msg = false;
@@ -37,16 +42,14 @@ void checkCANMessages() {
           updatePowerState((PSUState)parameter);
         }
       }
-      if (getDeviceType() == DEVICE_ATTACHED_PSU) {
-        if (CANMessageType == CAN_OUTPUT_POLARITY) {
-          reportOutCurrent();
-        }        
-        if (CANMessageType == CAN_CURRENT_REQUEST) {
-          reportOutCurrent();
-        }
-        if (CANMessageType == CAN_CURRENT_ZERO_REQUEST) {
-          zeroCurrentSense();
-        }
+      if (CANMessageType == CAN_OUTPUT_POLARITY) {
+        reportOutCurrent();
+      }
+      if (CANMessageType == CAN_CURRENT_REQUEST) {
+        reportOutCurrent();
+      }
+      if (CANMessageType == CAN_CURRENT_ZERO_REQUEST) {
+        zeroCurrentSense();
       }
     }
   }

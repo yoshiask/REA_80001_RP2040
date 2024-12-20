@@ -269,3 +269,39 @@ void readInputVoltage() {
     Serial.println("V");
   }
 }
+
+void checkInputVoltage() {
+  static uint8_t count = 0;
+
+  if (count > 10) {
+    int address = PSU_I2C_ADDRESS;
+    Wire.beginTransmission(address);
+    Wire.write(0x88);
+    uint8_t status = Wire.endTransmission();
+
+    if (status == 0) {
+      Wire.requestFrom(address, 2);
+      uint8_t HIGH = 0;
+      uint8_t LOW = 0;
+      uint8_t byteNum = 0;
+      while (Wire.available()) {
+        uint8_t value = Wire.read();
+        if (byteNum == 1) {
+          HIGH = value;
+        }
+        if (byteNum == 0) {
+          LOW = value;
+        }
+        byteNum++;
+      }
+      float voltage = ((float)((HIGH << 8) | LOW)) / 92.5;
+      if (voltage > 15) {
+        updatePDStatusLED(PD_SRC_20V);
+      } else {
+        updatePDStatusLED(PD_SRC_5V);
+      }
+    }
+    count = 0;
+  }
+  count++;
+}

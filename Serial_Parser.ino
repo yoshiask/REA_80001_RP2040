@@ -109,6 +109,7 @@ void initializeSerial() {
 }
 
 void printCommands() {
+  Serial.println("---------------------------------------------------------------------------");
   Serial.println("The test commands are as follows:");
   Serial.println("0 : Turn off LED Power Supply");
   Serial.println("20V : Turn on 20V LED Power (currently not functional)");
@@ -125,6 +126,7 @@ void printCommands() {
   Serial.println("cs : print current sense information once");
   Serial.println("csc : print current sense current continuously for 30 seconds");
   Serial.println("dt : print device type");
+  Serial.println("---------------------------------------------------------------------------");
 }
 
 void sendTestPatternCommand() {
