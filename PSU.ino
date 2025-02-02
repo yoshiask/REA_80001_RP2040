@@ -170,7 +170,7 @@ void powerStateMachineCommand(PSUState commandedState) {
     Serial.println("LED Power Off");
     sendPSUStatusCommand(psuState, PSU_OK);
   }
-  /*
+
   if (psuState == PSU_20V) {
     digitalWrite(PSU_STANDBY_PIN, HIGH);
     digitalWrite(PSU_EN_12V_PIN, LOW);
@@ -178,7 +178,7 @@ void powerStateMachineCommand(PSUState commandedState) {
     updateStatusLED(psuState);
     Serial.println("LED Power 20V Enabled");
   }
-  */
+
   if (psuState == PSU_12V) {
     digitalWrite(PSU_STANDBY_PIN, LOW);
     digitalWrite(PSU_EN_12V_PIN, HIGH);

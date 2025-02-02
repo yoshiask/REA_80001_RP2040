@@ -13,10 +13,11 @@ void serialParser() {
       validCommand = true;
     }
     if (strcmp(inputString, "20V") == 0) {
-      //setVoltage(PSU_20V);
-      sendVoltageCommand(PSU_POWER_OFF);
-      Serial.println("20V Mode Currently Disabled");
-      Serial.println("Turning off LED Power");
+      sendVoltageCommand(PSU_20V);
+      //sendVoltageCommand(PSU_POWER_OFF);
+      //Serial.println("20V Mode Currently Disabled");
+      //Serial.println("Turning off LED Power");
+      Serial.println("12V LED Power Enabling");
       validCommand = true;
     }
     if (strcmp(inputString, "12V") == 0) {
