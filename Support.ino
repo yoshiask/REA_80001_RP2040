@@ -2,19 +2,21 @@
 void slottedLoop() {
   static uint32_t slot_100ms = 0;
   static uint32_t slot_10ms = 0;
+  static uint32_t slot_1s = 0;
+
+  if (millis() >= slot_1s) {
+    slot_1s = millis() + 1000;
+    Slot_1s();
+  }
 
   if (millis() >= slot_100ms) {
+    slot_100ms = millis() + 100;
     Slot_100ms();
-    while (millis() >= slot_100ms) {
-      slot_100ms += 100;
-    }
   }
 
   if (millis() >= slot_10ms) {
+    slot_10ms = millis() + 10;
     Slot_10ms();
-    while (millis() >= slot_10ms) {
-      slot_10ms += 10;
-    }
   }
 
   Slot_EveryLoop();
@@ -66,13 +68,15 @@ void printDeviceType() {
   }
 }
 
+Adafruit_NeoPixel status_led = Adafruit_NeoPixel(2, LED_STATUS_PIN, NEO_GRB + NEO_KHZ800);
+
 void initializeStatusLED() {
   status_led.begin();
-  status_led.clear();
-  status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(20, 20, 20));
-  //status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
-  //while (!status_led.canShow()) {}
-  status_led.show();
+  // status_led.clear();
+  // status_led.setPixelColor(LED_STATUS_ADDRESS, status_led.Color(20, 20, 20));
+  // status_led.setPixelColor(LED_PD_STATUS_ADDRESS, status_led.Color(20, 0, 0));
+  // //while (!status_led.canShow()) {}
+  // status_led.show();
 }
 
 void updateStatusLED(PSUState commandedSupplyState) {
@@ -90,7 +94,7 @@ void updateStatusLED(PSUState commandedSupplyState) {
   }
 }
 
-static HUSB238_PDSelection pdLEDStatus;
+static HUSB238_PDSelection pdLEDStatus = PD_NOT_SELECTED;
 
 void updatePDStatusLED(HUSB238_PDSelection pdStatus) {
   pdLEDStatus = pdStatus;
@@ -103,9 +107,8 @@ void updatePDStatusLED(HUSB238_PDSelection pdStatus) {
 
 
 
-void ledHandler(void) {
-  status_led.clear();  
-  updateStatusLED(getPSUStatus());
+void ledHandler() {
+  updateStatusLED(psuState);
   updatePDStatusLED(pdLEDStatus);
   status_led.show();
 }
@@ -114,10 +117,18 @@ void ledHandler(void) {
 void updatePowerState(PSUState commandedSupplyState) {
   Serial.print("Power Supply State: ");
   Serial.println(commandedSupplyState);
-  powerStateMachineCommand(commandedSupplyState);
-  psuState = commandedSupplyState;
+  setPSUState(commandedSupplyState);
 }
 
-void refreshStatusLED() {
-  updateStatusLED(psuState);
+void initWatchdog() {
+
+  if (watchdog_enable_caused_reboot()) {
+    printf("Rebooted by Watchdog!\n");
+  } else {
+    printf("Clean boot\n");
+  }
+
+  // Enable the watchdog, requiring the watchdog to be updated every 100ms or the chip will reboot
+  // second arg is pause on debug which means the watchdog will pause when stepping through code
+  watchdog_enable(100, 1);
 }

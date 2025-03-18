@@ -27,15 +27,32 @@ void terminateCAN() {
   digitalWrite(CAN_NTERM, LOW);
 }
 
+static bool printCAN = false;
+
+void toggleCANPrinting() {
+  printCAN = !printCAN;
+  if(printCAN){
+    Serial.println("Printing received CAN messages: Enabled");
+  } else {
+    Serial.println("Printing received CAN messages: Disabled");
+  }
+}
+
+void printCANMessage(uint8_t ident, uint8_t CANMessageType, uint8_t parameter) {
+  if (printCAN) {
+    Serial.println(ident);
+    Serial.println(CANMessageType);
+    Serial.println(parameter);
+  }
+}
+
 void checkCANMessages() {
   if (got_msg) {
     got_msg = false;
     uint8_t ident = rx_msg.id;
     uint8_t CANMessageType = rx_msg.data[0];
     uint8_t parameter = rx_msg.data[1];
-    // Serial.println(ident);
-    // Serial.println(CANMessageType);
-    // Serial.println(parameter);
+    printCANMessage(ident, CANMessageType, parameter);
     if (ident == CAN_IDENTIFIER) {
       if (CANMessageType == CAN_PSU_VOLTAGE) {
         if (parameter > 0 && parameter <= PSU_5V) {
@@ -53,4 +70,18 @@ void checkCANMessages() {
       }
     }
   }
+}
+
+void pingCAN() {
+  tx_msg.id = CAN_IDENTIFIER;
+  tx_msg.dlc = 8;
+  tx_msg.data[0] = CAN_PING;
+  tx_msg.data[1] = CAN_STUFFING_FRAME;
+  tx_msg.data[2] = CAN_STUFFING_FRAME;
+  tx_msg.data[3] = CAN_STUFFING_FRAME;
+  tx_msg.data[4] = CAN_STUFFING_FRAME;
+  tx_msg.data[5] = CAN_STUFFING_FRAME;
+  tx_msg.data[6] = CAN_STUFFING_FRAME;
+  tx_msg.data[7] = CAN_STUFFING_FRAME;
+  can2040.send_message(&tx_msg);
 }

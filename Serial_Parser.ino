@@ -36,12 +36,12 @@ void serialParser() {
       validCommand = true;
     }
     if (strcmp(inputString, "po") == 0) {
-      setDesiredFullBridgeState(FULL_BRIDGE_POSITIVE);
+      setFullBridgePolarity(FULL_BRIDGE_POLARITY_POSITIVE);
       Serial.println("Full Bridge Positive");
       validCommand = true;
     }
     if (strcmp(inputString, "rv") == 0) {
-      setDesiredFullBridgeState(FULL_BRIDGE_NEGATIVE);
+      setFullBridgePolarity(FULL_BRIDGE_POLARITY_NEGATIVE);
       Serial.println("Full Bridge Negative");
       validCommand = true;
     }
@@ -78,6 +78,10 @@ void serialParser() {
       printDeviceType();
       validCommand = true;
     }
+    if (strcmp(inputString, "can") == 0) {
+      toggleCANPrinting();
+      validCommand = true;
+    }    
 
     if (validCommand == false) {
       Serial.println("Invalid Command");
@@ -127,6 +131,7 @@ void printCommands() {
   Serial.println("cs : print current sense information once");
   Serial.println("csc : print current sense current continuously for 30 seconds");
   Serial.println("dt : print device type");
+  Serial.println("can : toggle printing received CAN messages");
   Serial.println("---------------------------------------------------------------------------");
 }
 

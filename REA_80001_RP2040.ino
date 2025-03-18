@@ -1,7 +1,11 @@
-#include <Adafruit_NeoPixel.h>
+#include "lib/Adafruit_NeoPixel/Adafruit_NeoPixel.h"
+#include "lib/Adafruit_NeoPixel/Adafruit_NeoPixel.cpp"
 #include <ACAN2040.h>
 #include <Wire.h>
 #include "Adafruit_HUSB238.h"
+#include <stdio.h>
+#include "pico/stdlib.h"
+#include "hardware/watchdog.h"
 
 #define LED_STATUS_PIN 9
 #define LED_STATUS_ADDRESS 0
@@ -39,6 +43,8 @@ const uint32_t SYSCLK = F_CPU;
 void my_cb(struct can2040 *cd, uint32_t notify, struct can2040_msg *msg);
 char *msg_to_str(struct can2040_msg *msg);
 
+
+
 ACAN2040 can2040(PIONUM0, TXPIN0, RXPIN0, BITRATE0, SYSCLK, my_cb);
 bool got_msg = false;
 struct can2040_msg tx_msg, rx_msg;
@@ -63,7 +69,8 @@ enum CANDataType {
   CAN_CURRENT_ZERO_REQUEST = 4,
   CAN_CURRENT_DATA = 5,
   CAN_PSU_STATUS = 6,
-  CAN_OUTPUT_POLARITY = 7
+  CAN_OUTPUT_POLARITY = 7,
+  CAN_PING = 8
 };
 
 enum DeviceType {
@@ -84,12 +91,9 @@ enum FullBridgePolarity {
   FULL_BRIDGE_POLARITY_NEGATIVE
 };
 
-PSUState psuState = PSU_POWER_OFF;
-
-Adafruit_NeoPixel status_led = Adafruit_NeoPixel(2, LED_STATUS_PIN, NEO_GRB + NEO_KHZ800);
-
 void setup() {
   initializeSerial();
+  //initWatchdog();
   delay(100);
   initializeStatusLED();
   checkDeviceType();
@@ -98,7 +102,7 @@ void setup() {
   initalize_USB_PD();
   initCurrentSense();
   initializePSUPins();
-  powerStateMachineCommand(PSU_POWER_OFF);
+  setPSUState(PSU_POWER_OFF);
   initializeFullBridge();
   terminateCAN();
 
@@ -111,10 +115,14 @@ void loop() {
   slottedLoop();
 }
 
+bool runLEDHandler = false;
+
+void Slot_1s() {
+  pingCAN();  
+}
 
 //Functions that run once every 100ms
 void Slot_100ms() {
-  refreshStatusLED();
   fullBridgeStateMachine();
   ledHandler();
   checkInputVoltage();
@@ -124,6 +132,8 @@ void Slot_100ms() {
 void Slot_10ms() {
   checkCANMessages();
   serialParser();
+  powerStateMachine();
+  //watchdog_update();
 }
 
 //Functions that run once every loop (the fastest possible)

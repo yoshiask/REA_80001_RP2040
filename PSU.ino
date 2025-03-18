@@ -6,6 +6,9 @@ FullBridgeType desiredState = FULL_BRIDGE_OFF;
 
 static FullBridgePolarity fullBridgePolarity = FULL_BRIDGE_POLARITY_POSITIVE;
 
+PSUState psuState = PSU_POWER_OFF;
+PSUState requestedPSUState = PSU_POWER_OFF;
+
 // Initialization for the pins
 void initializeFullBridge() {
   fullBridgeOff();
@@ -109,9 +112,9 @@ void turnOnFullBridge() {
   if (fullBridgePolarity == FULL_BRIDGE_POLARITY_POSITIVE) {
     setDesiredFullBridgeState(FULL_BRIDGE_POSITIVE);
   }
-  // if (fullBridgePolarity == FULL_BRIDGE_POLARITY_NEGATIVE) {
-  //   setDesiredFullBridgeState(FULL_BRIDGE_NEGATIVE);
-  // }
+  if (fullBridgePolarity == FULL_BRIDGE_POLARITY_NEGATIVE) {
+    setDesiredFullBridgeState(FULL_BRIDGE_NEGATIVE);
+  }
 }
 
 void turnOffFullBridge() {
@@ -124,7 +127,7 @@ void setFullBridgePolarity(FullBridgePolarity polarity) {
     Serial.println("CAN Received Full Bridge Positive");
   }
   if (polarity == FULL_BRIDGE_POLARITY_NEGATIVE) {
-    //fullBridgePolarity = polarity;
+    fullBridgePolarity = polarity;
     Serial.println("CAN Received Full Bridge Negative, Command Disabled.");
   }
 }
@@ -155,49 +158,90 @@ PSUState getPSUStatus(void) {
   return psuState;
 }
 
-void powerStateMachineCommand(PSUState commandedState) {
-  psuState = commandedState;
+void setPSUState(PSUState request) {
+  requestedPSUState = request;
+}
 
-  digitalWrite(PSU_CONNECT_OUTPUT_PIN, LOW);
-  digitalWrite(CONNECT_INPUT_PIN, LOW);
-  delay(100);
+void powerStateMachine(void) {
+  static uint8_t counter = 0;
+  static bool initState = false;
+
+  if (counter != 0) {
+    counter--;
+  }
 
   if (psuState == PSU_POWER_OFF) {
-    digitalWrite(PSU_STANDBY_PIN, HIGH);
-    digitalWrite(PSU_EN_12V_PIN, LOW);
-    turnOffFullBridge();
-    updateStatusLED(psuState);
-    Serial.println("LED Power Off");
-    sendPSUStatusCommand(psuState, PSU_OK);
+    if (initState) {
+      digitalWrite(PSU_STANDBY_PIN, HIGH);
+      digitalWrite(PSU_CONNECT_OUTPUT_PIN, LOW);
+      digitalWrite(CONNECT_INPUT_PIN, LOW);
+      delay(2);
+      digitalWrite(PSU_EN_12V_PIN, LOW);
+      turnOffFullBridge();
+      updateStatusLED(psuState);
+      Serial.println("LED Power Off");
+      sendPSUStatusCommand(psuState, PSU_OK);
+      initState = false;
+    }
+
+    if (requestedPSUState != psuState && counter == 0) {
+      psuState = requestedPSUState;
+      initState = true;
+    }
   }
 
   if (psuState == PSU_20V) {
-    digitalWrite(PSU_STANDBY_PIN, HIGH);
-    digitalWrite(PSU_EN_12V_PIN, LOW);
-    digitalWrite(CONNECT_INPUT_PIN, HIGH);
-    updateStatusLED(psuState);
-    Serial.println("LED Power 20V Enabled");
+    if (initState) {
+      digitalWrite(PSU_STANDBY_PIN, HIGH);
+      digitalWrite(PSU_EN_12V_PIN, LOW);
+      digitalWrite(CONNECT_INPUT_PIN, HIGH);
+      turnOnFullBridge();
+      updateStatusLED(psuState);
+      Serial.println("LED Power 20V Enabled");
+      initState = false;
+    }
+    if (requestedPSUState != psuState) {
+      psuState = PSU_POWER_OFF;
+      counter = 2;
+      initState = true;
+    }
   }
 
   if (psuState == PSU_12V) {
-    digitalWrite(PSU_STANDBY_PIN, LOW);
-    digitalWrite(PSU_EN_12V_PIN, HIGH);
-    turnOnFullBridge();
-    delay(2);
-    digitalWrite(PSU_CONNECT_OUTPUT_PIN, HIGH);
-    updateStatusLED(psuState);
-    Serial.println("LED Power 12V Enabled");
-    sendPSUStatusCommand(psuState, PSU_OK);
+    if (initState) {
+      digitalWrite(PSU_STANDBY_PIN, LOW);
+      digitalWrite(PSU_EN_12V_PIN, HIGH);
+      turnOnFullBridge();
+      delay(2);
+      digitalWrite(PSU_CONNECT_OUTPUT_PIN, HIGH);
+      updateStatusLED(psuState);
+      Serial.println("LED Power 12V Enabled");
+      sendPSUStatusCommand(psuState, PSU_OK);
+      initState = false;
+    }
+    if (requestedPSUState != psuState) {
+      psuState = PSU_POWER_OFF;
+      counter = 2;
+      initState = true;
+    }
   }
   if (psuState == PSU_5V) {
-    digitalWrite(PSU_STANDBY_PIN, LOW);
-    digitalWrite(PSU_EN_12V_PIN, LOW);
-    turnOnFullBridge();
-    delay(2);
-    digitalWrite(PSU_CONNECT_OUTPUT_PIN, HIGH);
-    updateStatusLED(psuState);
-    Serial.println("LED Power 5V Enabled");
-    sendPSUStatusCommand(psuState, PSU_OK);
+    if (initState) {
+      digitalWrite(PSU_STANDBY_PIN, LOW);
+      digitalWrite(PSU_EN_12V_PIN, LOW);
+      turnOnFullBridge();
+      delay(2);
+      digitalWrite(PSU_CONNECT_OUTPUT_PIN, HIGH);
+      updateStatusLED(psuState);
+      Serial.println("LED Power 5V Enabled");
+      sendPSUStatusCommand(psuState, PSU_OK);
+      initState = false;
+    }
+    if (requestedPSUState != psuState) {
+      psuState = PSU_POWER_OFF;
+      counter = 2;
+      initState = true;
+    }
   }
 }
 
