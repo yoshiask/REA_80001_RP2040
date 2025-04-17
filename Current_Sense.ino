@@ -96,7 +96,7 @@ float readCurrentSenseVoltage() {
 }
 
 float readCurrentSenseCurrentFast() {
-  return (readCurrentSenseVoltage() - currentSenseZero) / VOLTS_PER_AMP;
+  return (readCurrentSenseVoltageFast() - currentSenseZero) / VOLTS_PER_AMP;
 }
 
 float readCurrentSenseVoltageFast() {

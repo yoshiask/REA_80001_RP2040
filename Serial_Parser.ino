@@ -30,6 +30,11 @@ void serialParser() {
       Serial.println("5V LED Power Enabling");
       validCommand = true;
     }
+     if (strcmp(inputString, "ramp") == 0) {
+      startRamp();
+      Serial.println("Testing output ramp");
+      validCommand = true;
+    }   
     if (strcmp(inputString, "off") == 0) {
       setDesiredFullBridgeState(FULL_BRIDGE_OFF);
       Serial.println("Full Bridge Off");
@@ -121,6 +126,7 @@ void printCommands() {
   Serial.println("12V : Turn on 12V LED Power");
   Serial.println("5V : Turn on 5V LED Power");
   Serial.println("off : Full Bridge Off");
+  Serial.println("ramp : Run 5V ramp on full bridge for voltage detection");
   Serial.println("po : Full Bridge Positive");
   Serial.println("rv : Full Bridge Reverse");
   Serial.println("t : Run/Stop Test Pattern on LED Strip (power must be enabled first)");

@@ -20,6 +20,7 @@
 #define FB_B_L 11                 // Enable for negative connection
 #define FB_A_H 12                 // Enable for positive connection
 #define FB_A_L 13                 // Enable for positive connection
+#define LED_DO 14
 #define DEVICE_TYPE_PIN_0 24      // Device ID Pin 0
 #define DEVICE_TYPE_PIN_1 25      // Device ID Pin 1
 #define CURRENT_SENSE A0
@@ -49,6 +50,8 @@ ACAN2040 can2040(PIONUM0, TXPIN0, RXPIN0, BITRATE0, SYSCLK, my_cb);
 bool got_msg = false;
 struct can2040_msg tx_msg, rx_msg;
 struct can2040_stats can_stats;
+
+uint8_t verboseLevel = 2;
 
 enum PSUState {
   PSU_POWER_OFF = 1,
@@ -94,6 +97,7 @@ enum FullBridgePolarity {
 void setup() {
   initializeSerial();
   //initWatchdog();
+  pinMode(LED_DO,INPUT);
   delay(100);
   initializeStatusLED();
   checkDeviceType();

@@ -159,12 +159,17 @@ PSUState getPSUStatus(void) {
 }
 
 void setPSUState(PSUState request) {
-  requestedPSUState = request;
+  if (requestedPSUState != request) {
+    requestedPSUState = request;
+  } else {
+    sendPSUStatusCommand(psuState, PSU_OK);
+  }
 }
 
 void powerStateMachine(void) {
   static uint8_t counter = 0;
   static bool initState = false;
+  rampHandler();
 
   if (counter != 0) {
     counter--;
@@ -243,6 +248,42 @@ void powerStateMachine(void) {
       initState = true;
     }
   }
+}
+
+bool rampEnabled = false;
+uint16_t rampValue = 0;
+
+void rampHandler() {
+  if (rampEnabled) {
+    analogWrite(FB_A_H, rampValue);
+    if (readCurrentSenseCurrentFast() > 0.2) {
+      turnOffFullBridge();
+      rampEnabled = false;
+      Serial.println("Load detected");
+    }
+    if(rampValue == 2000){
+      turnOffFullBridge();
+      rampEnabled = false;
+      Serial.println("No load detected.");
+    } else {
+      rampValue ++;
+    }
+  }
+}
+
+void startRamp() {
+  Serial.println("Starting Ramp");
+  sendVoltageCommand(PSU_5V);
+  digitalWrite(FB_B_H, LOW);
+  digitalWrite(FB_A_H, LOW);
+  digitalWrite(FB_A_L, LOW);
+  digitalWrite(FB_B_L, HIGH);
+  analogWriteFreq(10000);
+  analogWriteRange(10000);
+  analogWriteResolution(16);
+  analogWrite(FB_A_H, 0);
+  rampValue = 0;
+  rampEnabled = true;
 }
 
 void sendPSUStatusCommand(PSUState state, PSUStatus status) {
