@@ -9,6 +9,12 @@ static FullBridgePolarity fullBridgePolarity = FULL_BRIDGE_POLARITY_POSITIVE;
 PSUState psuState = PSU_POWER_OFF;
 PSUState requestedPSUState = PSU_POWER_OFF;
 
+enum PolarityDetectState {
+  POL_IDLE,
+  POL_CHECK_FORWARD,
+  POL_CHECK_REVERSE
+};
+
 // Initialization for the pins
 void initializeFullBridge() {
   fullBridgeOff();
@@ -169,7 +175,7 @@ void setPSUState(PSUState request) {
 void powerStateMachine(void) {
   static uint8_t counter = 0;
   static bool initState = false;
-  rampHandler();
+  polarityDetectHandler();
 
   if (counter != 0) {
     counter--;
@@ -250,23 +256,123 @@ void powerStateMachine(void) {
   }
 }
 
+
+bool currentDetected = false;
 bool rampEnabled = false;
+bool forwardRamp = false;
 uint16_t rampValue = 0;
+bool forwardShort = false;
+bool reverseShort = false;
+bool runPolarityDetection = false;
+uint8_t rampDelay = 0;
+PolarityDetectState polarityCurrentState = POL_IDLE;
+PolarityDetectState polarityPreviousState = POL_IDLE;
+
+void polarityDetectHandler() {
+  static bool firstRunInState = true;
+  rampHandler();
+  // Detect state change
+  if (polarityCurrentState != polarityPreviousState) {
+    firstRunInState = true;
+    polarityPreviousState = polarityCurrentState;
+  }
+
+  switch (polarityCurrentState) {
+    case POL_IDLE:
+      if (firstRunInState) {
+        firstRunInState = false;
+      }
+
+      if (runPolarityDetection) {
+        polarityCurrentState = POL_CHECK_FORWARD;
+        runPolarityDetection = false;
+      }
+      break;
+
+    case POL_CHECK_FORWARD:
+      if (firstRunInState) {
+        if (verboseLevel >= 1) Serial.println("Entering CHECK_FORWARD_POLARITY");
+        firstRunInState = false;
+        rampEnabled = true;
+        forwardRamp = true;
+        setDesiredFullBridgeState(FULL_BRIDGE_POSITIVE);
+        setPSUState(PSU_5V);
+      }
+
+      if (rampEnabled == false) {
+        if (currentDetected) {
+          forwardShort = true;
+        } else {
+          forwardShort = false;
+        }
+        polarityCurrentState = POL_CHECK_REVERSE;
+      }
+      break;
+
+    case POL_CHECK_REVERSE:
+      if (firstRunInState) {
+        if (verboseLevel >= 1) Serial.println("Entering CHECK_REVERSE_POLARITY");
+        firstRunInState = false;
+        rampEnabled = true;
+        forwardRamp = false;
+        setDesiredFullBridgeState(FULL_BRIDGE_NEGATIVE);
+      }
+
+      if (rampEnabled == false) {
+        if (currentDetected) {
+          reverseShort = true;
+        } else {
+          reverseShort = false;
+        }
+        polarityCurrentState = POL_IDLE;
+        setPSUState(PSU_POWER_OFF);
+        if (!forwardShort && !reverseShort) {
+          Serial.println("No strip detected");
+        }
+        if (forwardShort && !reverseShort) {
+          Serial.println("Strip detected with reverse polarity");
+        }
+        if (!forwardShort && reverseShort) {
+          Serial.println("Strip detected with forward polarity");
+        }
+        if (forwardShort && reverseShort) {
+          Serial.println("Output Shorted");
+        }
+      }
+      break;
+  }
+}
 
 void rampHandler() {
   if (rampEnabled) {
-    analogWrite(FB_A_H, rampValue);
-    if (readCurrentSenseCurrentFast() > 0.2) {
-      turnOffFullBridge();
-      rampEnabled = false;
-      Serial.println("Load detected");
-    }
-    if(rampValue == 2000){
-      turnOffFullBridge();
-      rampEnabled = false;
-      Serial.println("No load detected.");
+    if (rampDelay == 0) {
+      if (forwardRamp) {
+        analogWrite(FB_A_H, rampValue);
+      } else {
+        analogWrite(FB_B_H, rampValue);
+      }
+      float current = readCurrentSenseCurrentFast();
+      Serial.println(current);
+      if (abs(current) > 0.2) {
+        turnOffFullBridge();
+        rampEnabled = false;
+        currentDetected = true;
+        if (verboseLevel >= 2) Serial.println("Load detected");
+        rampValue = 0;
+        rampDelay = 50;
+      }
+      if (rampValue == 100) {
+        rampValue = 0;
+        rampDelay = 50;
+        turnOffFullBridge();
+        rampEnabled = false;
+        currentDetected = false;
+        if (verboseLevel >= 2) Serial.println("No load detected.");
+      } else {
+        rampValue++;
+      }
     } else {
-      rampValue ++;
+      rampDelay--;
     }
   }
 }
@@ -287,7 +393,7 @@ void startRamp() {
 }
 
 void sendPSUStatusCommand(PSUState state, PSUStatus status) {
-  Serial.println("Sending PSU Status Message");
+  if (verboseLevel >= 2) Serial.println("Sending PSU Status Message");
   tx_msg.id = CAN_IDENTIFIER;
   tx_msg.dlc = 8;
   tx_msg.data[0] = CAN_PSU_STATUS;

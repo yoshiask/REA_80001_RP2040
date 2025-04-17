@@ -51,7 +51,7 @@ bool got_msg = false;
 struct can2040_msg tx_msg, rx_msg;
 struct can2040_stats can_stats;
 
-uint8_t verboseLevel = 2;
+uint8_t verboseLevel = 1;
 
 enum PSUState {
   PSU_POWER_OFF = 1,
