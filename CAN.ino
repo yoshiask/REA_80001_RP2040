@@ -68,6 +68,9 @@ void checkCANMessages() {
       if (CANMessageType == CAN_CURRENT_ZERO_REQUEST) {
         zeroCurrentSense();
       }
+      if (CANMessageType == CAN_RUN_POLARITY_CHECK) {
+        startPolarityDetect();
+      }      
     }
   }
 }

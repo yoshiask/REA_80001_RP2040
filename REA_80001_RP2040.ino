@@ -73,7 +73,9 @@ enum CANDataType {
   CAN_CURRENT_DATA = 5,
   CAN_PSU_STATUS = 6,
   CAN_OUTPUT_POLARITY = 7,
-  CAN_PING = 8
+  CAN_PING = 8,
+  CAN_RUN_POLARITY_CHECK = 9,
+  CAN_POLARITY_CHECK_DATA = 10
 };
 
 enum DeviceType {
@@ -92,6 +94,13 @@ enum FullBridgeType {
 enum FullBridgePolarity {
   FULL_BRIDGE_POLARITY_POSITIVE,
   FULL_BRIDGE_POLARITY_NEGATIVE
+};
+
+enum PolarityDetectType {
+  POLARITY_NO_DETECT,
+  POLARITY_FORWARD,
+  POLARITY_REVERSE,
+  POLARITY_SHORTED
 };
 
 void setup() {
@@ -142,4 +151,5 @@ void Slot_10ms() {
 
 //Functions that run once every loop (the fastest possible)
 void Slot_EveryLoop() {
+  rampHandler();
 }
