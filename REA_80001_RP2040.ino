@@ -97,6 +97,7 @@ enum FullBridgePolarity {
 };
 
 enum PolarityDetectType {
+  POLARITY_DETECT_NOT_RUN,
   POLARITY_NO_DETECT,
   POLARITY_FORWARD,
   POLARITY_REVERSE,

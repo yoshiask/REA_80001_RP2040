@@ -42,7 +42,7 @@ void reportOutCurrent() {
 }
 
 void sendCurrentDataCommand(uint8_t byte_high, uint8_t byte_low) {
-  Serial.println("Sending Start/Stop Test Pattern CAN Message.");
+  Serial.println("Sending Current Data");
   tx_msg.id = CAN_IDENTIFIER;
   tx_msg.dlc = 8;
   tx_msg.data[0] = CAN_CURRENT_DATA;

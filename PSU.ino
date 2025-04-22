@@ -123,15 +123,34 @@ FullBridgeType getFullBridgeState(){
   return fullBridgePhyState;
 }
 
-void turnOnFullBridge() {
-  if (autoFullBridgeControl){
-  if (fullBridgePolarity == FULL_BRIDGE_POLARITY_POSITIVE) {
-    setDesiredFullBridgeState(FULL_BRIDGE_POSITIVE);
+bool turnOnFullBridge() {
+  bool retval = false;
+  if (verboseLevel >= 2) Serial.print("Auto Setting Full Bridge: ");
+  if (verboseLevel >= 2) Serial.println(getPolarityDetectStatus());
+  switch (getPolarityDetectStatus()) {
+    case POLARITY_DETECT_NOT_RUN:
+        retval = true;
+      break;
+    case POLARITY_NO_DETECT:
+      setDesiredFullBridgeState(FULL_BRIDGE_OFF);
+      retval = false;
+      break;
+    case POLARITY_FORWARD:
+      setDesiredFullBridgeState(FULL_BRIDGE_POSITIVE);
+      retval = true;
+      break;
+    case POLARITY_REVERSE:
+      setDesiredFullBridgeState(FULL_BRIDGE_NEGATIVE);
+      retval = true;
+      break;
+    case POLARITY_SHORTED:
+      setDesiredFullBridgeState(FULL_BRIDGE_OFF);
+      retval = false;
+      break;
+    default:
+      break;
   }
-  if (fullBridgePolarity == FULL_BRIDGE_POLARITY_NEGATIVE) {
-    setDesiredFullBridgeState(FULL_BRIDGE_NEGATIVE);
-  }
-  }
+  return retval;
 }
 
 void turnOffFullBridge() {

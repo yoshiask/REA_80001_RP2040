@@ -6,14 +6,14 @@ bool forwardShort = false;
 bool reverseShort = false;
 bool runPolarityDetection = false;
 uint16_t rampDelay = 0;
-PolarityDetectType polarityDetectStatus = POLARITY_NO_DETECT;
+PolarityDetectType polarityDetectStatus = POLARITY_DETECT_NOT_RUN;
 PolarityDetectState polarityCurrentState = POL_IDLE;
 PolarityDetectState polarityPreviousState = POL_IDLE;
 
 void startRamp() {
   Serial.println("Starting Ramp");
   analogWriteFreq(10000);
-  analogWriteRange(10000);
+  analogWriteRange(2000);
   rampValue = 0;
   rampEnabled = true;
 }
@@ -24,6 +24,10 @@ void startPolarityDetect() {
   setPSUState(PSU_POWER_OFF);
     analogWriteFreq(10000);
   analogWriteRange(10000);
+}
+
+PolarityDetectType getPolarityDetectStatus(){
+  return polarityDetectStatus;
 }
 
 void polarityDetectHandler() {
@@ -44,6 +48,7 @@ void polarityDetectHandler() {
       if (runPolarityDetection && getFullBridgeState() == FULL_BRIDGE_OFF && getPSUStatus() == PSU_POWER_OFF) {
         polarityCurrentState = POL_CHECK_FORWARD;
         runPolarityDetection = false;
+        polarityDetectStatus = POLARITY_DETECT_NOT_RUN;
       }
       break;
 
@@ -137,7 +142,7 @@ void rampHandler() {
       if (verboseLevel >= 2) Serial.println("Load detected");
       rampValue = 0;
     }
-    if (rampValue == 800) {
+    if (rampValue == 2000) {
       rampValue = 0;
       fullBridgeOff();
       rampEnabled = false;
