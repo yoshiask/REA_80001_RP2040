@@ -216,9 +216,9 @@ void powerStateMachine(void) {
       digitalWrite(PSU_STANDBY_PIN, HIGH);
       digitalWrite(PSU_CONNECT_OUTPUT_PIN, LOW);
       digitalWrite(CONNECT_INPUT_PIN, LOW);
-      delay(2);
-      digitalWrite(PSU_EN_12V_PIN, LOW);
       turnOffFullBridge();
+      delay(50);
+      digitalWrite(PSU_EN_12V_PIN, LOW);
       updateStatusLED(psuState);
       Serial.println("LED Power Off");
       sendPSUStatusCommand(psuState, PSU_OK);
@@ -236,9 +236,9 @@ void powerStateMachine(void) {
       digitalWrite(PSU_STANDBY_PIN, HIGH);
       digitalWrite(PSU_EN_12V_PIN, LOW);
       digitalWrite(CONNECT_INPUT_PIN, HIGH);
-      turnOnFullBridge();
       updateStatusLED(psuState);
       Serial.println("LED Power 20V Enabled");
+      sendPSUStatusCommand(psuState, PSU_OK);
       initState = false;
     }
     if (requestedPSUState != psuState) {
@@ -250,10 +250,10 @@ void powerStateMachine(void) {
 
   if (psuState == PSU_12V) {
     if (initState) {
-      digitalWrite(PSU_STANDBY_PIN, LOW);
       digitalWrite(PSU_EN_12V_PIN, HIGH);
-      turnOnFullBridge();
-      delay(2);
+      delay(10);
+      digitalWrite(PSU_STANDBY_PIN, LOW);
+      delay(10);
       digitalWrite(PSU_CONNECT_OUTPUT_PIN, HIGH);
       updateStatusLED(psuState);
       Serial.println("LED Power 12V Enabled");
@@ -268,10 +268,10 @@ void powerStateMachine(void) {
   }
   if (psuState == PSU_5V) {
     if (initState) {
-      digitalWrite(PSU_STANDBY_PIN, LOW);
       digitalWrite(PSU_EN_12V_PIN, LOW);
-      turnOnFullBridge();
-      delay(2);
+      delay(10);
+      digitalWrite(PSU_STANDBY_PIN, LOW);
+      delay(10);
       digitalWrite(PSU_CONNECT_OUTPUT_PIN, HIGH);
       updateStatusLED(psuState);
       Serial.println("LED Power 5V Enabled");

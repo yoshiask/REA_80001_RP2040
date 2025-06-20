@@ -38,11 +38,16 @@ void toggleCANPrinting() {
   }
 }
 
-void printCANMessage(uint8_t ident, uint8_t CANMessageType, uint8_t parameter) {
+void printCANMessage(uint8_t ident, uint8_t CANMessageType, uint8_t parameter1, uint8_t parameter2) {
   if (printCAN) {
-    Serial.println(ident);
-    Serial.println(CANMessageType);
-    Serial.println(parameter);
+    Serial.print("CAN: ");
+    Serial.print(ident);
+    Serial.print(" , ");
+    Serial.print(CANMessageType);
+    Serial.print(" , ");
+    Serial.print(parameter1);
+    Serial.print(" , ");
+    Serial.print(parameter2);
   }
 }
 
@@ -51,12 +56,13 @@ void checkCANMessages() {
     got_msg = false;
     uint8_t ident = rx_msg.id;
     uint8_t CANMessageType = rx_msg.data[0];
-    uint8_t parameter = rx_msg.data[1];
-    printCANMessage(ident, CANMessageType, parameter);
+    uint8_t parameter1 = rx_msg.data[1];
+    uint8_t parameter2 = rx_msg.data[2];
+    printCANMessage(ident, CANMessageType, parameter1, parameter2);
     if (ident == CAN_IDENTIFIER) {
       if (CANMessageType == CAN_PSU_VOLTAGE) {
-        if (parameter > 0 && parameter <= PSU_5V) {
-          updatePowerState((PSUState)parameter);
+        if (parameter1 > 0 && parameter1 <= PSU_5V) {
+          updatePowerState((PSUState)parameter1);
         }
       }
       if (CANMessageType == CAN_OUTPUT_POLARITY) {
@@ -69,8 +75,11 @@ void checkCANMessages() {
         zeroCurrentSense();
       }
       if (CANMessageType == CAN_RUN_POLARITY_CHECK) {
-        startPolarityDetect();
-      }      
+        startPolarityDetect((PSUState)parameter1, (PolarityDetectType)parameter2);
+      }
+      if (CANMessageType == CAN_SET_FULL_BRIDGE) {
+        setDesiredFullBridgeState((FullBridgeType)parameter1);
+      }     
     }
   }
 }

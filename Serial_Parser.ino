@@ -35,12 +35,36 @@ void serialParser() {
       Serial.println("Testing output ramp");
       validCommand = true;
     }
-    if (strcmp(inputString, "det") == 0) {
-      Serial.println("Detecting Polarity");
-      startPolarityDetect();
+    if (strcmp(inputString, "det5+") == 0) {
+      Serial.println("Detecting 5V Forward Polarity");
+      startPolarityDetect(PSU_5V, POLARITY_FORWARD);
       validCommand = true;
     }
-
+    if (strcmp(inputString, "det5-") == 0) {
+      Serial.println("Detecting 5V Reverse Polarity");
+      startPolarityDetect(PSU_5V, POLARITY_REVERSE);
+      validCommand = true;
+    }
+    if (strcmp(inputString, "det12+") == 0) {
+      Serial.println("Detecting 12V Forward Polarity");
+      startPolarityDetect(PSU_12V, POLARITY_FORWARD);
+      validCommand = true;
+    }
+    if (strcmp(inputString, "det12-") == 0) {
+      Serial.println("Detecting 12V Reverse Polarity");
+      startPolarityDetect(PSU_12V, POLARITY_REVERSE);
+      validCommand = true;
+    }
+    if (strcmp(inputString, "det20+") == 0) {
+      Serial.println("Detecting 20V Forward Polarity");
+      startPolarityDetect(PSU_20V, POLARITY_FORWARD);
+      validCommand = true;
+    }
+    if (strcmp(inputString, "det20-") == 0) {
+      Serial.println("Detecting 20V Reverse Polarity");
+      startPolarityDetect(PSU_20V, POLARITY_REVERSE);
+      validCommand = true;
+    }
     if (strcmp(inputString, "off") == 0) {
       setDesiredFullBridgeState(FULL_BRIDGE_OFF);
       Serial.println("Full Bridge Off");
@@ -133,6 +157,10 @@ void initializeSerial() {
 
 void printCommands() {
   Serial.println("---------------------------------------------------------------------------");
+  Serial.print("REA_80001_ESP32 Hardware Tester, Version: ");
+  Serial.print(FW_VERSION);
+  Serial.print(" , Build Date: ");
+  Serial.println(__DATE__);
   Serial.println("The test commands are as follows:");
   Serial.println("0 : Turn off LED Power Supply");
   Serial.println("20V : Turn on 20V LED Power (currently not functional)");
@@ -140,7 +168,12 @@ void printCommands() {
   Serial.println("5V : Turn on 5V LED Power");
   Serial.println("off : Full Bridge Off");
   Serial.println("ramp : Run 5V ramp on full bridge for voltage detection");
-  Serial.println("det : Run full polarity detection");
+  Serial.println("det5+ : Run forward polarity detection at 5V");
+  Serial.println("det5- : Run reverse polarity detection at 5V");
+  Serial.println("det12+ : Run forward polarity detection at 12V");
+  Serial.println("det12- : Run reverse polarity detection at 12V");
+  Serial.println("det20+ : Run forward polarity detection at 20V");
+  Serial.println("det20- : Run reverse polarity detection at 20V");
   Serial.println("po : Full Bridge Positive");
   Serial.println("rv : Full Bridge Reverse");
   Serial.println("t : Run/Stop Test Pattern on LED Strip (power must be enabled first)");

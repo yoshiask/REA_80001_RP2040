@@ -7,8 +7,11 @@ bool reverseShort = false;
 bool runPolarityDetection = false;
 uint16_t rampDelay = 0;
 PolarityDetectType polarityDetectStatus = POLARITY_DETECT_NOT_RUN;
+PolarityDetectType polarityDetectRequest = POLARITY_DETECT_NOT_RUN;
+PSUState polarityDetectVoltageRequest = PSU_POWER_OFF;
 PolarityDetectState polarityCurrentState = POL_IDLE;
 PolarityDetectState polarityPreviousState = POL_IDLE;
+
 
 void startRamp() {
   Serial.println("Starting Ramp");
@@ -18,15 +21,22 @@ void startRamp() {
   rampEnabled = true;
 }
 
-void startPolarityDetect() {
-  runPolarityDetection = true;
-  setDesiredFullBridgeState(FULL_BRIDGE_OFF);
-  setPSUState(PSU_POWER_OFF);
+void startPolarityDetect(PSUState voltageRequested, PolarityDetectType polarityRequested) {
+  if (polarityRequested == POLARITY_FORWARD || polarityRequested == POLARITY_REVERSE) {
+    polarityDetectRequest = polarityRequested;
+    polarityDetectVoltageRequest = voltageRequested;
+    runPolarityDetection = true;
+    polarityCurrentState = POL_IDLE;
+    setDesiredFullBridgeState(FULL_BRIDGE_OFF);
+    setPSUState(PSU_POWER_OFF);
     analogWriteFreq(10000);
-  analogWriteRange(10000);
+    analogWriteRange(10000);
+  } else {
+    Serial.println("Incorrect Polarity Detect Parameters Received");
+  }
 }
 
-PolarityDetectType getPolarityDetectStatus(){
+PolarityDetectType getPolarityDetectStatus() {
   return polarityDetectStatus;
 }
 
@@ -46,7 +56,12 @@ void polarityDetectHandler() {
       }
 
       if (runPolarityDetection && getFullBridgeState() == FULL_BRIDGE_OFF && getPSUStatus() == PSU_POWER_OFF) {
-        polarityCurrentState = POL_CHECK_FORWARD;
+        if (polarityDetectRequest == POLARITY_FORWARD) {
+          polarityCurrentState = POL_CHECK_FORWARD;
+        }
+        if (polarityDetectRequest == POLARITY_REVERSE) {
+          polarityCurrentState = POL_CHECK_REVERSE;
+        }
         runPolarityDetection = false;
         polarityDetectStatus = POLARITY_DETECT_NOT_RUN;
       }
@@ -63,7 +78,7 @@ void polarityDetectHandler() {
         digitalWrite(FB_B_L, HIGH);
         digitalWrite(FB_A_H, LOW);
         digitalWrite(FB_A_L, LOW);
-        setPSUState(PSU_5V);
+        setPSUState(polarityDetectVoltageRequest);
       }
 
       if (rampEnabled == false) {
@@ -72,7 +87,19 @@ void polarityDetectHandler() {
         } else {
           forwardShort = false;
         }
-        polarityCurrentState = POL_CHECK_REVERSE;
+        polarityCurrentState = POL_IDLE;
+        setPSUState(PSU_POWER_OFF);
+        setDesiredFullBridgeState(FULL_BRIDGE_OFF);
+        fullBridgeOff();
+        if (!forwardShort) {
+          Serial.println("Forward Polarity: No current detected");
+          polarityDetectStatus = POLARITY_NO_DETECT;
+        }
+        if (forwardShort) {
+          Serial.println("Reverse Polarity: Current detected");
+          polarityDetectStatus = POLARITY_SHORTED;
+        }
+        sendPolarityStatusCommand(polarityDetectStatus);
       }
       break;
 
@@ -87,6 +114,7 @@ void polarityDetectHandler() {
         digitalWrite(FB_B_L, LOW);
         digitalWrite(FB_A_H, LOW);
         digitalWrite(FB_A_L, HIGH);
+        setPSUState(polarityDetectVoltageRequest);
       }
 
       if (rampEnabled == false) {
@@ -99,20 +127,12 @@ void polarityDetectHandler() {
         setPSUState(PSU_POWER_OFF);
         setDesiredFullBridgeState(FULL_BRIDGE_OFF);
         fullBridgeOff();
-        if (!forwardShort && !reverseShort) {
-          Serial.println("No strip detected");
+        if (!reverseShort) {
+          Serial.println("Reverse Polarity: No current detected");
           polarityDetectStatus = POLARITY_NO_DETECT;
         }
-        if (forwardShort && !reverseShort) {
-          Serial.println("Strip detected with reverse polarity");
-          polarityDetectStatus = POLARITY_REVERSE;
-        }
-        if (!forwardShort && reverseShort) {
-          Serial.println("Strip detected with forward polarity");
-          polarityDetectStatus = POLARITY_FORWARD;
-        }
-        if (forwardShort && reverseShort) {
-          Serial.println("Output Shorted");
+        if (reverseShort) {
+          Serial.println("Reverse Polarity: Current Detected");
           polarityDetectStatus = POLARITY_SHORTED;
         }
         sendPolarityStatusCommand(polarityDetectStatus);
@@ -122,7 +142,7 @@ void polarityDetectHandler() {
 }
 
 void rampHandler() {
-  if (rampEnabled && getPSUStatus() == PSU_5V) {  //&& getFullBridgeState() != FULL_BRIDGE_OFF
+  if (rampEnabled && getPSUStatus() != PSU_POWER_OFF) {  //&& getFullBridgeState() != FULL_BRIDGE_OFF
                                                   //if ((forwardRamp && getFullBridgeState() == FULL_BRIDGE_POSITIVE) || (!forwardRamp && getFullBridgeState() == FULL_BRIDGE_NEGATIVE)) {
     if (forwardRamp) {
       analogWrite(FB_A_H, rampValue);

@@ -35,6 +35,8 @@
 
 #define WIRE Wire
 
+#define FW_VERSION "1.0"
+
 const uint8_t PIONUM0 = 0;
 const uint8_t TXPIN0 = 7;
 const uint8_t RXPIN0 = 6;
@@ -43,8 +45,6 @@ const uint32_t SYSCLK = F_CPU;
 
 void my_cb(struct can2040 *cd, uint32_t notify, struct can2040_msg *msg);
 char *msg_to_str(struct can2040_msg *msg);
-
-
 
 ACAN2040 can2040(PIONUM0, TXPIN0, RXPIN0, BITRATE0, SYSCLK, my_cb);
 bool got_msg = false;
@@ -75,7 +75,8 @@ enum CANDataType {
   CAN_OUTPUT_POLARITY = 7,
   CAN_PING = 8,
   CAN_RUN_POLARITY_CHECK = 9,
-  CAN_POLARITY_CHECK_DATA = 10
+  CAN_POLARITY_CHECK_DATA = 10,
+  CAN_SET_FULL_BRIDGE = 11
 };
 
 enum DeviceType {
