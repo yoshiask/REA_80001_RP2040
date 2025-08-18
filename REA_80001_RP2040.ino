@@ -35,7 +35,7 @@
 
 #define WIRE Wire
 
-#define FW_VERSION "1.0"
+#define FW_VERSION "1.1"
 
 const uint8_t PIONUM0 = 0;
 const uint8_t TXPIN0 = 7;

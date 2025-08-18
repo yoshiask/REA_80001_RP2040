@@ -157,7 +157,7 @@ void initializeSerial() {
 
 void printCommands() {
   Serial.println("---------------------------------------------------------------------------");
-  Serial.print("REA_80001_ESP32 Hardware Tester, Version: ");
+  Serial.print("REA_80001_RP2040 Hardware Tester, Version: ");
   Serial.print(FW_VERSION);
   Serial.print(" , Build Date: ");
   Serial.println(__DATE__);
