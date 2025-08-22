@@ -390,3 +390,17 @@ void checkInputVoltage() {
   }
   count++;
 }
+
+void cycleAndPowerOnRail(PSUState request, FullBridgePolarity polarity) {
+  // Switch off PSU and bridge
+  setPSUState(PSU_POWER_OFF);
+  turnOffFullBridge();
+  delay(20);
+
+  // Put bridge into position
+  setFullBridgePolarity(polarity);
+  delay(20);
+
+  // Start supplying the desired voltage
+  setPSUState(request);
+}
