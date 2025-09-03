@@ -79,7 +79,20 @@ void checkCANMessages() {
       }
       if (CANMessageType == CAN_SET_FULL_BRIDGE) {
         setDesiredFullBridgeState((FullBridgeType)parameter1);
-      }     
+      }
+      if (CANMessageType == CAN_CYCLE_POWER_RAIL) {
+        // Validate PSU voltage request
+        if (parameter1 <= PSU_POWER_OFF && parameter1 > PSU_5V) {
+          return;
+        }
+
+        // Validate polarity request
+        if (parameter2 != FULL_BRIDGE_POLARITY_POSITIVE && parameter2 != FULL_BRIDGE_POLARITY_NEGATIVE) {
+          return;
+        }
+
+        cycleAndPowerOnRail((PSUState)parameter1, (FullBridgePolarity)parameter2);
+      }
     }
   }
 }
